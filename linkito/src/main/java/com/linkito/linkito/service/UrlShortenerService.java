@@ -3,8 +3,11 @@ package com.linkito.linkito.service;
 import com.linkito.linkito.model.ShortenedUrl;
 import com.linkito.linkito.repository.ShortenedUrlRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
@@ -24,26 +27,38 @@ public class UrlShortenerService {
         }
         return shortUrl.toString();
     }
-    public String shortenUrl(String originalUrl) {
+
+    public ShortenedUrl shortenUrl(String originalUrl, String userId, String password, String tag) {
         Optional<ShortenedUrl> existingUrl = repository.findByOriginalUrl(originalUrl);
         if (existingUrl.isPresent()) {
-            return existingUrl.get().getShortUrl();
+            return existingUrl.get();
         } else {
             String shortUrl;
             do {
                 shortUrl = generateShortUrl();
             } while (repository.findByShortUrl(shortUrl).isPresent());
-    
-            // Aquí asegúrate de que solo guardas el valor de la URL, no un objeto JSON
+
             ShortenedUrl shortenedUrl = new ShortenedUrl();
-            shortenedUrl.setOriginalUrl(originalUrl.trim());  // Solo guarda el texto de la URL
+            shortenedUrl.setOriginalUrl(originalUrl.trim());
             shortenedUrl.setShortUrl(shortUrl);
-            repository.save(shortenedUrl);
-    
-            return shortUrl;
+            shortenedUrl.setUserId(userId);
+
+            if (userId == null || userId.trim().isEmpty()) {
+                shortenedUrl.setExpirationTime(LocalDateTime.now().plusHours(24));  // Expira en 24 horas
+            }
+
+            shortenedUrl.setPassword((password != null && !password.trim().isEmpty()) ? password : null);
+            shortenedUrl.setTag((tag != null && !tag.trim().isEmpty()) ? tag : null);
+
+            return repository.save(shortenedUrl);
         }
     }
-    
-    
-    
+
+    @Scheduled(fixedRate = 3600000)
+    public void deleteExpiredUrls() {
+        List<ShortenedUrl> expiredUrls = repository.findAllByExpirationTimeBefore(LocalDateTime.now());
+        for (ShortenedUrl url : expiredUrls) {
+            repository.delete(url);
+        }
+    }
 }
