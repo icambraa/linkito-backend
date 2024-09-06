@@ -3,6 +3,9 @@ package com.linkito.linkito.controller;
 import com.linkito.linkito.model.ShortenedUrl;
 import com.linkito.linkito.repository.ShortenedUrlRepository;
 import com.linkito.linkito.service.UrlShortenerService;
+
+import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +22,9 @@ public class UrlShortenerController {
 
     @Autowired
     private ShortenedUrlRepository repository;
+
+    @Value("${frontend.base-url}")
+    private String frontendBaseUrl;
 
     @PostMapping("/api/shorten")
     public ResponseEntity<ShortenedUrl> shortenUrl(@RequestBody Map<String, String> request) {
@@ -63,7 +69,7 @@ public class UrlShortenerController {
             ShortenedUrl url = shortenedUrl.get();
 
             if (url.getPassword() != null) {
-                return ResponseEntity.status(302).header("Location", "https://linkito.netlify.app/password-protected/" + shortUrl).build();
+                return ResponseEntity.status(302).header("Location", frontendBaseUrl + shortUrl).build();
             }
 
             url.setClicks(url.getClicks() + 1);
