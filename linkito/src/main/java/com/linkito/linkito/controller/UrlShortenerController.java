@@ -63,7 +63,7 @@ public class UrlShortenerController {
             ShortenedUrl url = shortenedUrl.get();
 
             if (url.getPassword() != null) {
-                return ResponseEntity.status(302).header("Location", "http://localhost:5173/password-protected/" + shortUrl).build();
+                return ResponseEntity.status(302).header("Location", "https://linkito.netlify.app/password-protected/" + shortUrl).build();
             }
 
             url.setClicks(url.getClicks() + 1);
