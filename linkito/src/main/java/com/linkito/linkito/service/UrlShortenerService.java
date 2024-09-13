@@ -29,30 +29,31 @@ public class UrlShortenerService {
     }
 
     public ShortenedUrl shortenUrl(String originalUrl, String userId, String password, String tag) {
-        Optional<ShortenedUrl> existingUrl = repository.findByOriginalUrl(originalUrl);
-        if (existingUrl.isPresent()) {
-            return existingUrl.get();
-        } else {
-            String shortUrl;
-            do {
-                shortUrl = generateShortUrl();
-            } while (repository.findByShortUrl(shortUrl).isPresent());
-
-            ShortenedUrl shortenedUrl = new ShortenedUrl();
-            shortenedUrl.setOriginalUrl(originalUrl.trim());
-            shortenedUrl.setShortUrl(shortUrl);
-            shortenedUrl.setUserId(userId);
-
-            if (userId == null || userId.trim().isEmpty()) {
-                shortenedUrl.setExpirationTime(LocalDateTime.now().plusHours(24));  // Expira en 24 horas
-            }
-
-            shortenedUrl.setPassword((password != null && !password.trim().isEmpty()) ? password : null);
-            shortenedUrl.setTag((tag != null && !tag.trim().isEmpty()) ? tag : null);
-
-            return repository.save(shortenedUrl);
+        // Generar un nuevo short URL, siempre será único
+        String shortUrl;
+        do {
+            shortUrl = generateShortUrl();
+        } while (repository.findByShortUrl(shortUrl).isPresent()); // Evitar duplicados en el short URL
+    
+        // Crear el nuevo objeto ShortenedUrl
+        ShortenedUrl shortenedUrl = new ShortenedUrl();
+        shortenedUrl.setOriginalUrl(originalUrl.trim());
+        shortenedUrl.setShortUrl(shortUrl);  // Asignar el nuevo short URL generado
+        shortenedUrl.setUserId(userId);
+    
+        // Si el userId es nulo o vacío, establecer expiración de 24 horas
+        if (userId == null || userId.trim().isEmpty()) {
+            shortenedUrl.setExpirationTime(LocalDateTime.now().plusHours(24));  // Expira en 24 horas
         }
+    
+        // Si se ha proporcionado una contraseña, guárdala
+        shortenedUrl.setPassword((password != null && !password.trim().isEmpty()) ? password : null);
+        shortenedUrl.setTag((tag != null && !tag.trim().isEmpty()) ? tag : null);
+    
+        // Guardar el nuevo ShortenedUrl en la base de datos
+        return repository.save(shortenedUrl);
     }
+    
 
     @Scheduled(fixedRate = 3600000)
     public void deleteExpiredUrls() {
